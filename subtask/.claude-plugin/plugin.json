@@ -1,0 +1,8 @@
+{
+  "name": "subtask",
+  "description": "Multi-model task delegation with quota-aware routing across AI CLIs (Claude, Codex, Gemini, Cursor Agent)",
+  "version": "1.0.0",
+  "author": {
+    "name": "Tonic"
+  }
+}

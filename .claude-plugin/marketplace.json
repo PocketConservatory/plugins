@@ -1,0 +1,16 @@
+{
+  "name": "tonic",
+  "description": "Tonic's internal Claude Code plugins",
+  "owner": {
+    "name": "Tonic",
+    "email": "dev@tonicapp.com"
+  },
+  "plugins": [
+    {
+      "name": "subtask",
+      "description": "Multi-model task delegation with quota-aware routing across AI CLIs",
+      "version": "1.0.0",
+      "source": "./subtask"
+    }
+  ]
+}

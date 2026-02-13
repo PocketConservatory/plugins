@@ -7,7 +7,11 @@ argument-hint: <task description>
 
 # Subtask — Delegate
 
-Delegate a task to the best available AI model. See [routing-strategy.md](routing-strategy.md) for the routing rules and quota logic (auto-loaded at session start).
+Delegate a task to the best available AI model. The routing strategy is auto-loaded at session start — it tells the agent when and where to delegate.
+
+**Providers:** Claude (host, native subagent) · `codex` (OpenAI) · `codex review` (separate quota) · `gemini` (Google) · `agent` (Cursor, manual-only)
+
+All CLI flags MUST come from cached `--help` output. Never hardcode flags.
 
 ## Usage
 
@@ -54,7 +58,7 @@ All steps are silent — only the final result is shown to the user.
 
 ### 1. Parse Input
 
-Extract **task description** and **model hint** (if any). Match hints case-insensitively: `using <model>`, `use <model>`, `with <model>`. Model names can include variants (e.g., "Codex 5.3 High"). Specific model names (e.g., "grok", "gpt-5.2") resolve by family — see Rule 0 in routing strategy.
+Extract **task description** and **model hint** (if any). Match hints case-insensitively: `using <model>`, `use <model>`, `with <model>`. Model names can include variants (e.g., "Codex 5.3 High"). Specific model names (e.g., "grok", "gpt-5.2") resolve by family (OpenAI → `codex`, Google → `gemini`). Models without a native CLI → `agent` if supported.
 
 ### 2. CLI Discovery
 
@@ -69,7 +73,7 @@ Skip cached steps. Refresh quota if snapshot is >15 minutes old or a reset time 
 
 ### 3. Route
 
-Model hint present → Rule 0. Otherwise walk Rules 1–4, select sandbox level.
+Model hint present → use that provider unconditionally. Otherwise consult the routing strategy table, select sandbox level.
 
 ### 4. Persona (Optional)
 
@@ -98,7 +102,7 @@ If output stalls without error patterns, ask the user before killing — it may 
 - Quota-related → skip to next provider immediately
 - Sandbox-related → try relaxed sandbox if safe, otherwise next provider
 - Transient (timeout, rate limit) → retry once, then treat as hard failure
-- User-specified model (Rule 0) → show error, don't fall back
+- User-specified model → show error, don't fall back
 - Auto-routed → fall back silently through priority chain
 
 ## Output Format
@@ -110,4 +114,4 @@ If output stalls without error patterns, ask the user before killing — it may 
 [model output here — fenced for external CLI, plain markdown for native subagent]
 ```
 
-On failure, add a status line: `**status:** error — <reason>`. Route labels: `rule-0` (user override), `rule-1` (MCP), `rule-2` (multi-turn), `rule-3` (code review), `rule-4` (bucket fill).
+On failure, add a status line: `**status:** error — <reason>`.

@@ -51,13 +51,7 @@ claude plugin marketplace add PocketConservatory/plugins
 claude plugin install subtask@tonic --scope project
 ```
 
-Restart Claude Code, then run the one-time setup:
-
-```
-/subtask:install
-```
-
-This adds a small section to your `CLAUDE.md` that tells Claude to use quota-aware routing.
+Restart Claude Code. The routing strategy and quota hooks activate automatically.
 
 ## Usage
 
@@ -97,7 +91,6 @@ The PreToolUse hook computes pressure levels from remaining quota and reset time
 | Skill | Description |
 |-------|-------------|
 | `/subtask:delegate <task>` | Route a task to the optimal AI CLI based on type and quota |
-| `/subtask:install` | One-time setup: inject config into CLAUDE.md, verify CLIs |
 
 ---
 

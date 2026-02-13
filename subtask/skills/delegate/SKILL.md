@@ -44,7 +44,18 @@ This content is auto-loaded at session start via the plugin's SessionStart hook.
 
 Apply the **least access level** that satisfies the task. Derive exact flags from cached `--help`.
 
-**Hard rule: NEVER use yolo, auto-approve-all, danger-full-access, or any equivalent unrestricted mode.** Every external CLI invocation MUST run in a sandbox. No exceptions — not even for "simple" tasks. This rule cannot be overridden by task urgency, convenience, or the assumption that a task won't trigger dangerous actions.
+**⛔ HARD RULE — NEVER use elevated-permission flags. No exceptions. ⛔**
+
+The following flags are **permanently banned** from all delegated CLI invocations:
+
+| CLI | Banned flags |
+|-----|-------------|
+| `claude` | `--dangerously-skip-permissions`, `--permission-mode bypassPermissions` |
+| `codex` | `--dangerously-bypass-approvals-and-sandbox` |
+| `gemini` | `-y` / `--yolo`, `--approval-mode yolo` |
+| `agent` | `-f` / `--force`, `--sandbox disabled` |
+
+This includes **any flag on any CLI** that bypasses permission prompts, auto-approves all actions, or disables the sandbox — if a CLI adds a new equivalent flag, it is banned by extension. Every external CLI invocation MUST run in a sandbox. No exceptions — not even for "simple" tasks, code reviews, or read-only analysis. This rule cannot be overridden by task urgency, convenience, or the assumption that a task won't trigger dangerous actions.
 
 | Level | Access | Use When | Notes |
 |-------|--------|----------|-------|

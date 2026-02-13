@@ -1,11 +1,11 @@
 <!-- subtask:begin -->
-## Quota-Aware Task Delegation
+## MANDATORY: Pre-Work Delegation Check
 
-The subtask plugin loads a routing strategy and quota levels into context. **Before starting any non-trivial task**, check the quota pressure and apply these rules:
+**STOP before every task.** Before spawning a Task subagent, making a WebFetch/WebSearch call, or starting any multi-step work:
 
-- **High/Critical (<20% remaining):** Default to `/subtask:delegate`. Only stay inline if the task specifically requires capabilities unique to you (e.g., MCP access, multi-turn interaction). Everything else — implementation, research, code review, file analysis — gets delegated.
-- **Medium (20–50%):** Delegate multi-step tasks and implementation work. Simple single-call tasks can stay inline.
-- **Low (>50%):** Delegate when it saves context or crosses provider boundaries. Speed takes priority.
+1. Check the quota pressure from the session start context
+2. If **High/Critical**: Use `/subtask:delegate` unless the task requires MCP access or multi-turn interaction with the user. No exceptions.
+3. If you catch yourself about to use `Task` tool with `subagent_type` of `general-purpose` or `Explore` at High pressure — that's a delegation candidate. Stop and use `/subtask:delegate` instead.
 
-This is not optional. Running work inline that another provider could handle wastes your quota — especially when the loaded context shows they have capacity.
+**This is a blocking gate, not a suggestion.** The routing strategy was loaded for a reason. Using host tokens for work another provider could handle is a bug, not a judgment call.
 <!-- subtask:end -->

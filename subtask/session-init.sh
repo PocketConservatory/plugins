@@ -9,7 +9,7 @@ echo "[subtask] Session context:"
 # CLI discovery
 echo ""
 echo "Installed CLIs:"
-for cmd in claude codex gemini agent; do
+for cmd in codex gemini agent; do
   path=$(which "$cmd" 2>/dev/null || true)
   if [ -n "$path" ]; then
     echo "  $cmd: $path"
@@ -25,7 +25,6 @@ else
   echo "  npx not found"
 fi
 
-# Routing strategy (auto-loaded for context)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo ""
-cat "${SCRIPT_DIR}/skills/delegate/routing-strategy.md"
+cat "${SCRIPT_DIR}/skills/delegate/context.md"

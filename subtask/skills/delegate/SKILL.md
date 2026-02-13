@@ -68,7 +68,9 @@ Extract **task description** and **model hint** (if any). Match hints case-insen
 
 ### 3. Route
 
-Model hint present → use that provider unconditionally. Otherwise follow the routing strategy priority, select sandbox level.
+Model hint present → use that provider unconditionally.
+
+No model hint → classify the task and route per the **Quota-pressure routing** table (loaded at session start), which defines fallback chains and sandbox levels per task type. Tasks requiring MCP tools (Linear, Slack, Notion, etc.) stay on Claude (native subagent).
 
 ### 4. Persona (Optional)
 

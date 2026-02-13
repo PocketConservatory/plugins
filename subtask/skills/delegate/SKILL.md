@@ -63,18 +63,12 @@ Extract **task description** and **model hint** (if any). Match hints case-insen
 
 ### 2. CLI Discovery
 
-If the SessionStart hook already injected CLI availability and quota data, use that. Otherwise:
-
-1. Run `which <cli>` only for the CLI selected by routing (not all CLIs)
-2. Run `<cli> --help` for that CLI and cache output
-3. If routing selected `agent`, also run `agent --list-models` and cache
-4. Run `npx cclimits` for quota snapshot across all providers
-
-Skip cached steps. Refresh quota if snapshot is >15 minutes old or a reset time has passed.
+1. Run `<cli> --help` for the selected CLI and cache output
+2. If routing selected `agent`, also run `agent --list-models` and cache
 
 ### 3. Route
 
-Model hint present → use that provider unconditionally. Otherwise consult the routing strategy table, select sandbox level.
+Model hint present → use that provider unconditionally. Otherwise follow the routing strategy priority, select sandbox level.
 
 ### 4. Persona (Optional)
 
@@ -109,7 +103,7 @@ If output stalls without error patterns, ask the user before killing — it may 
 ## Output Format
 
 > **subtask**
-> **model:** codex · **route:** rule-3 (code review) · **sandbox:** read-only
+> **model:** codex · **reason:** code review · **sandbox:** read-only
 
 ```
 [model output here — fenced for external CLI, plain markdown for native subagent]

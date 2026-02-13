@@ -70,15 +70,15 @@ Extract **task description** and **model hint** (if any). Match hints case-insen
 
 Model hint present → use that provider unconditionally.
 
-No model hint → classify the task and route by type. Both Codex and Gemini are general-purpose and can handle any task — the chain picks the best fit first, then falls back based on availability:
+No model hint → classify the task and route per the **Quota-pressure routing** fallback chains (loaded at session start). Apply sandbox level by task type:
 
-| Task Type | Fallback Chain | Sandbox Level |
-|-----------|---------------|---------------|
-| Code analysis, understanding, exploration | Codex → Gemini | Read-only |
-| Code changes, implementation, refactoring | Codex → Gemini | Working dir |
-| Code review, PR review, diff analysis | Codex Review → Codex → Gemini | Read-only |
-| Web search, URL fetching, library research | Gemini → Codex | Pipe |
-| Needs MCP tools (Linear, Slack, Notion, etc.) | Claude (native subagent) | N/A |
+| Task Type | Sandbox Level |
+|-----------|---------------|
+| Code analysis, understanding, exploration | Read-only |
+| Code changes, implementation, refactoring | Working dir |
+| Code review, PR review, diff analysis | Read-only |
+| Web search, URL fetching, library research | Pipe |
+| Needs MCP tools (Linear, Slack, Notion, etc.) | N/A (Claude native subagent) |
 
 ### 4. Persona (Optional)
 

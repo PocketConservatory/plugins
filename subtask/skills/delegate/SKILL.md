@@ -70,17 +70,15 @@ Extract **task description** and **model hint** (if any). Match hints case-insen
 
 Model hint present → use that provider unconditionally.
 
-No model hint → classify the task and route by type:
+No model hint → classify the task and route by type. Both Codex and Gemini are general-purpose and can handle any task — the chain picks the best fit first, then falls back based on availability:
 
-| Task Type | Provider | Sandbox Level |
-|-----------|----------|---------------|
-| Code analysis, understanding, exploration | Codex | Read-only |
-| Code changes, implementation, refactoring | Codex | Working dir |
-| Code review, PR review, diff analysis | Codex Review | Read-only |
-| Web search, URL fetching, library research | Gemini | Pipe |
+| Task Type | Fallback Chain | Sandbox Level |
+|-----------|---------------|---------------|
+| Code analysis, understanding, exploration | Codex → Gemini | Read-only |
+| Code changes, implementation, refactoring | Codex → Gemini | Working dir |
+| Code review, PR review, diff analysis | Codex Review → Codex → Gemini | Read-only |
+| Web search, URL fetching, library research | Gemini → Codex | Pipe |
 | Needs MCP tools (Linear, Slack, Notion, etc.) | Claude (native subagent) | N/A |
-
-If the preferred provider is unavailable or at quota, fall through: Codex → Gemini → Claude. Codex Review has separate quota and does not fall through.
 
 ### 4. Persona (Optional)
 

@@ -51,9 +51,9 @@ done <<< "$data"
 # Suggest the best provider for the task type being blocked
 case "$tool_name" in
   Task)
-    reason="Claude quota is ${claude_pressure} (${claude_remaining}). Use /subtask:delegate for code tasks (→ Codex) or web research (→ Gemini). Available: ${available}" ;;
+    reason="Claude quota is ${claude_pressure} (${claude_remaining}). Use /subtask:delegate for code tasks (Codex → Gemini) or web research (Gemini → Codex). Available: ${available}" ;;
   WebSearch|WebFetch)
-    reason="Claude quota is ${claude_pressure} (${claude_remaining}). Use /subtask:delegate for web research (→ Gemini). Available: ${available}" ;;
+    reason="Claude quota is ${claude_pressure} (${claude_remaining}). Use /subtask:delegate for web research (Gemini → Codex). Available: ${available}" ;;
 esac
 
 jq -n --arg reason "$reason" '{

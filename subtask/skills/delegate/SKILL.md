@@ -68,7 +68,19 @@ Extract **task description** and **model hint** (if any). Match hints case-insen
 
 ### 3. Route
 
-Model hint present → use that provider unconditionally. Otherwise follow the routing strategy priority, select sandbox level.
+Model hint present → use that provider unconditionally.
+
+No model hint → classify the task and route by type:
+
+| Task Type | Provider | Sandbox Level |
+|-----------|----------|---------------|
+| Code analysis, understanding, exploration | Codex | Read-only |
+| Code changes, implementation, refactoring | Codex | Working dir |
+| Code review, PR review, diff analysis | Codex Review | Read-only |
+| Web search, URL fetching, library research | Gemini | Pipe |
+| Needs MCP tools (Linear, Slack, Notion, etc.) | Claude (native subagent) | N/A |
+
+If the preferred provider is unavailable or at quota, fall through: Codex → Gemini → Claude. Codex Review has separate quota and does not fall through.
 
 ### 4. Persona (Optional)
 

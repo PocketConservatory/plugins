@@ -62,39 +62,43 @@ Task is reviewing code for correctness, quality, security, or patterns.
 
 ### Rule 4: Bucket Fill (All Other Tasks)
 
-Everything else — implementation, research, analysis, advisory, documentation — follows the same priority based on quota pressure:
+Everything else — implementation, research, analysis, advisory, documentation.
 
-| Pressure | Route to | Rationale |
-|----------|----------|-----------|
-| **Low** (>50%) | Claude (host, inline) | Speed wins. No delegation latency. |
-| **Medium** (20–50%) | Codex for multi-step tasks; Claude for simple tasks | Start spilling heavy work to preserve Claude quota |
-| **High** (<20%) | Codex for everything delegatable | Reserve Claude for MCP, multi-turn, and displaying results |
-| **Critical** (<5%) | Codex → Gemini | Exhaust Codex first, then spill to Gemini |
+**The decision is based on remaining capacity across ALL providers, not just the host.** Each provider measures quota differently (different window durations, tiers, rate limits). Use the raw data from `cclimits` — don't assume uniform windows.
 
-**Fallback chain at any pressure:** Codex → Gemini → Claude (host, native subagent).
+**Principle:** Route to the provider with the most remaining capacity, respecting the priority order (Claude → Codex → Gemini). Stay on a higher-priority provider when it has headroom; spill to the next when it doesn't.
 
-If a provider fails or is out of quota, move to the next in the chain. Claude as host is always the final fallback — it can't be "unavailable."
+**How it works:**
+
+1. If Claude has comfortable headroom → run inline on Claude (fastest, no delegation latency)
+2. If Claude is getting tight but Codex has capacity → delegate to Codex
+3. If both Claude and Codex are pressured but Gemini has capacity → delegate to Gemini
+4. If all providers are low → use whichever has the *most* remaining capacity relative to its limits
+
+**Simple tasks** (1–2 tool calls, small output) can stay on Claude at any pressure — the token cost is negligible and delegation latency isn't worth it.
+
+**Fallback on failure:** If a provider errors or is quota-exhausted mid-task, move to the next in priority. Claude as host is always the final fallback — it can't be "unavailable."
 
 ---
 
 ## Inline vs. Delegate
 
-Delegation has real latency cost. The goal is to **maximize value per quota token**, not to delegate everything blindly.
+Delegation has real latency cost. The goal is to **maximize value per quota token across all providers**, not to delegate everything blindly.
 
-- **Low pressure:** Most tasks run inline. Only delegate when output would flood context (large file dumps, raw search results).
-- **Medium pressure:** Delegate multi-step tasks and implementation. Keep simple single-call tasks inline.
-- **High/Critical pressure:** Delegate everything except MCP calls, trivial single-tool-call tasks, and displaying results to the user.
+- **When Claude has headroom:** Most tasks run inline. Only delegate when output would flood context (large file dumps, raw search results).
+- **When Claude is pressured but Codex isn't:** Delegate multi-step tasks and implementation to Codex. Keep trivial tasks inline.
+- **When both Claude and Codex are pressured:** Spill to Gemini. Reserve Claude for MCP, multi-turn, and displaying results.
 - **Multi-step research and web searches:** Almost always delegate regardless of pressure — the intermediate output pollutes context.
 
 ---
 
-## Quota Pressure Assessment
+## Reading Quota Data
 
-| Pressure | Condition | Delegation stance |
-|----------|-----------|-------------------|
-| **Low** | >50% remaining on both 5hr and 7-day windows | Inline by default, delegate for context hygiene |
-| **Medium** | 20–50% remaining on either window | Delegate multi-step work, inline simple tasks |
-| **High** | <20% remaining on either window | Delegate aggressively to Codex |
-| **Critical** | <5% remaining or rate-limited | Delegate all work; spill from Codex to Gemini |
+`cclimits` reports remaining capacity per provider. Each provider has its own measurement windows and thresholds — don't normalize them into a single scale. Instead, assess each provider independently:
 
-Note the **reset times** from the quota snapshot. Pressure applies until the earliest reset — after that, re-run `cclimits` to reassess.
+- **Has headroom:** Comfortably above 50% on all of its windows
+- **Getting tight:** Any window between 20–50%
+- **Pressured:** Any window below 20%
+- **Exhausted:** Below 5% or actively rate-limited
+
+Note the **reset times**. A provider that's pressured now but resets in 10 minutes is effectively available. A provider at 30% with 5 days until reset is tighter than it looks. Factor reset proximity into the judgment.

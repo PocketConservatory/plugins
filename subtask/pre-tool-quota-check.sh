@@ -2,7 +2,7 @@
 # pre-tool-quota-check.sh — PreToolUse hook for quota-sensitive tools
 # Reads structured quota data from quota-pressure.sh, emits an actionable
 # directive when Claude is HIGH/CRITICAL and the tool use is a delegation
-# candidate. Non-blocking: always exits 0.
+# candidate. Emits permissionDecision:deny JSON to block the call.
 
 INPUT=$(cat)
 tool_name=$(echo "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null) || exit 0
@@ -29,6 +29,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 data=$(bash "${SCRIPT_DIR}/quota-pressure.sh" 2>/dev/null) || exit 0
 
 # Check Claude's pressure level
+claude_remaining=$(echo "$data" | grep '^Claude|' | cut -d'|' -f2)
 claude_pressure=$(echo "$data" | grep '^Claude|' | cut -d'|' -f3)
 case "$claude_pressure" in
   HIGH|CRITICAL) ;;
@@ -46,13 +47,20 @@ done <<< "$data"
 # Only warn if there's somewhere to delegate to
 [[ -z "$available" ]] && exit 0
 
-# ─── Emit tool-appropriate warning ──────────────────────────────────
+# ─── Emit JSON to deny the tool call ─────────────────────────────────
 case "$tool_name" in
   Task)
-    echo "⚠️ STOP: Claude quota is critically low. Use /subtask:delegate instead of Task for this work." ;;
+    reason="Claude quota is ${claude_pressure} (${claude_remaining}). Use /subtask:delegate instead of Task. Available: ${available}" ;;
   WebSearch|WebFetch)
-    echo "⚠️ STOP: Claude quota is critically low. Use /subtask:delegate to delegate this web research." ;;
+    reason="Claude quota is ${claude_pressure} (${claude_remaining}). Use /subtask:delegate for web research. Available: ${available}" ;;
 esac
-echo "Available: ${available}"
+
+jq -n --arg reason "$reason" '{
+  hookSpecificOutput: {
+    hookEventName: "PreToolUse",
+    permissionDecision: "deny",
+    permissionDecisionReason: $reason
+  }
+}'
 
 exit 0

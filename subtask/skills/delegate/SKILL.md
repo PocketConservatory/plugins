@@ -65,10 +65,10 @@ Extract **task description** and **model hint** (if any). Match hints case-insen
 
 If the SessionStart hook already injected CLI availability and quota data, use that. Otherwise:
 
-1. Run `which codex gemini agent` (no chaining)
-2. Run `<cli> --help` for each installed CLI and cache output
-3. If `agent` installed, run `agent --list-models` and cache
-4. Run `npx cclimits --json` for quota snapshot across all providers
+1. Run `which <cli>` only for the CLI selected by routing (not all CLIs)
+2. Run `<cli> --help` for that CLI and cache output
+3. If routing selected `agent`, also run `agent --list-models` and cache
+4. Run `npx cclimits` for quota snapshot across all providers
 
 Skip cached steps. Refresh quota if snapshot is >15 minutes old or a reset time has passed.
 

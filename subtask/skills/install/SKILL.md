@@ -1,31 +1,51 @@
 ---
 name: install
-description: Set up the /subtask plugin — adds startup hook to CLAUDE.md and verifies CLI environment
+description: Set up the /subtask plugin — injects startup hook into the host's instruction file and verifies CLI environment
 user-invocable: true
 disable-model-invocation: true
 ---
 
 # Subtask — Install
 
-Run this once after installing the plugin to configure the project for quota-aware task delegation.
+Run this once after installing the plugin, or re-run to update an existing installation to the latest version.
 
 ## Steps
 
-1. **Check CLAUDE.md** for an existing `/subtask` startup hook. Look for a section that references reading the `/subtask` skill at session start.
+### 1. Identify the host's instruction file
 
-2. **If missing**, add a short section to CLAUDE.md:
+Determine where the current host agent reads project-level instructions. Examples:
+- **Claude Code** → `CLAUDE.md` in the project root
+- **Other hosts** → their equivalent project instruction file (e.g., `AGENTS.md`, `.codexrc`, etc.)
 
-```markdown
-## Quota-Aware Task Delegation
+Use the identified file for all subsequent steps.
 
-At the start of each session, read the `/subtask:delegate` skill to load the multi-model routing and quota management strategy. Assess quota pressure early and use it to guide inline vs. delegation decisions throughout the session. Use `/subtask:delegate` to delegate tasks to external AI CLIs when appropriate.
-```
+### 2. Read the canonical section
 
-3. **Run CLI discovery** to verify the environment is ready:
-   - Run `which claude codex gemini agent` to detect installed CLIs. Do not chain with `;`, `||`, `&&`, pipes, or redirects.
-   - For each installed CLI, run `<cli> --help` and confirm it responds.
-   - If `agent` is installed, run `agent --list-models` and confirm it responds.
+Read the canonical injection text from [instruction-hook.md](instruction-hook.md). This is the single source of truth for what gets injected.
 
-4. **Report** what was set up, which CLIs are available, and confirm the plugin hooks are active. The plugin's SessionStart hook auto-injects CLI availability and quota context on every session start, resume, clear, and compaction — no manual configuration needed.
+### 3. Inject or update the instruction file
 
-Skip any step where the config already exists.
+Search the instruction file for the `<!-- subtask:begin -->` marker:
+
+- **Marker found:** Compare the content between `<!-- subtask:begin -->` and `<!-- subtask:end -->` with the canonical text from instruction-hook.md.
+  - If different → replace the entire marked block (inclusive of markers) with the canonical version.
+  - If identical → skip, already up to date.
+
+- **Marker not found:** Search for the old-style unmarked section — a `## Quota-Aware Task Delegation` heading without surrounding `<!-- subtask:begin/end -->` markers.
+  - If found → replace the old section (from the heading through the end of its content paragraph) with the canonical marked version from instruction-hook.md.
+  - If not found → append the canonical marked section at the end of the file.
+
+### 4. Run CLI discovery
+
+Verify the environment is ready:
+- Run `which claude codex gemini agent` to detect installed CLIs. Do not chain with `;`, `||`, `&&`, pipes, or redirects.
+- For each installed CLI, run `<cli> --help` and confirm it responds.
+- If `agent` is installed, run `agent --list-models` and confirm it responds.
+
+### 5. Report
+
+Report what changed:
+- Which instruction file was updated (or "already up to date")
+- Whether the section was added, updated, or replaced from legacy format
+- Which CLIs are available
+- Confirm the plugin's SessionStart hook is active (it auto-injects CLI availability, quota context, and the routing strategy on every session start, resume, clear, and compaction)

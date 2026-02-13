@@ -10,11 +10,12 @@ A PreToolUse hook monitors quota pressure and will warn you before Task, WebSear
 
 When Claude quota is HIGH or CRITICAL, route by task type:
 
-| Task Type | Fallback Chain | Examples |
-|-----------|---------------|----------|
-| Code work | Codex → Gemini | Reading, writing, refactoring, exploring code |
-| Code review | Codex Review → Codex → Gemini | PR reviews, code quality checks, diff analysis |
-| Web search & research | Gemini → Codex | Searching the web, fetching URLs, researching libraries/APIs |
+| Task Type | Fallback Chain | Sandbox | Examples |
+|-----------|---------------|---------|----------|
+| Code analysis & exploration | Codex → Gemini | Read-only | Reading code, explaining logic, finding patterns |
+| Code changes & implementation | Codex → Gemini | Working dir | Writing code, refactoring, implementing features, fixing bugs |
+| Code review | Codex Review → Codex → Gemini | Read-only | PR reviews, code quality checks, diff analysis |
+| Web search & research | Gemini → Codex | Pipe | Searching the web, fetching URLs, researching libraries/APIs |
 
 Both Codex and Gemini are general-purpose — either can handle any task. The chain picks the best fit first, then falls back based on availability.
 

@@ -70,15 +70,7 @@ Extract **task description** and **model hint** (if any). Match hints case-insen
 
 Model hint present → use that provider unconditionally.
 
-No model hint → classify the task and route per the **Quota-pressure routing** fallback chains (loaded at session start). Apply sandbox level by task type:
-
-| Task Type | Sandbox Level |
-|-----------|---------------|
-| Code analysis, understanding, exploration | Read-only |
-| Code changes, implementation, refactoring | Working dir |
-| Code review, PR review, diff analysis | Read-only |
-| Web search, URL fetching, library research | Pipe |
-| Needs MCP tools (Linear, Slack, Notion, etc.) | N/A (Claude native subagent) |
+No model hint → classify the task and route per the **Quota-pressure routing** table (loaded at session start), which defines fallback chains and sandbox levels per task type. Tasks requiring MCP tools (Linear, Slack, Notion, etc.) stay on Claude (native subagent).
 
 ### 4. Persona (Optional)
 

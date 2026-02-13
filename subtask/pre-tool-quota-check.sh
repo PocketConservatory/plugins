@@ -48,13 +48,7 @@ done <<< "$data"
 [[ -z "$available" ]] && exit 0
 
 # ─── Emit JSON to deny the tool call ─────────────────────────────────
-# Suggest the best provider for the task type being blocked
-case "$tool_name" in
-  Task)
-    reason="Claude quota is ${claude_pressure} (${claude_remaining}). Use /subtask:delegate for code tasks (Codex → Gemini) or web research (Gemini → Codex). Available: ${available}" ;;
-  WebSearch|WebFetch)
-    reason="Claude quota is ${claude_pressure} (${claude_remaining}). Use /subtask:delegate for web research (Gemini → Codex). Available: ${available}" ;;
-esac
+reason="Claude quota is ${claude_pressure} (${claude_remaining}). Use /subtask:delegate with the routing and sandbox rules from your session context. Available: ${available}"
 
 jq -n --arg reason "$reason" '{
   hookSpecificOutput: {

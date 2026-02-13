@@ -7,9 +7,9 @@ argument-hint: <task description>
 
 # Subtask — Multi-Model Task Delegation
 
-Delegate a task to the best available AI model. Routes automatically based on task type and quota, or honors an explicit model choice.
+Delegate a task to the best available AI model. Routes automatically based on quota pressure, or honors an explicit model choice.
 
-This skill is **host-agnostic** — it works from any CLI tool (Claude Code, Codex, Gemini). The agent running this skill is the **host model**. All other models are reached via their CLI.
+This is a **Claude Code plugin**. Claude is the primary model; external CLIs (`codex`, `gemini`) are overflow buckets that absorb work as Claude's quota fills up. Priority is always **Claude → Codex → Gemini**.
 
 **Prerequisites:** None — the skill handles CLI discovery on demand if not already cached in working memory. If the plugin's SessionStart hook is active, CLI availability and quota pressure are already in context.
 
@@ -68,9 +68,9 @@ This includes **any flag on any CLI** that bypasses permission prompts, auto-app
 
 If the ideal sandbox mode fails on a CLI (e.g., read-only/plan mode requires an experimental flag, or a flag is unrecognized):
 
-1. **Try a more relaxed sandbox on the same CLI** if the agent judges it is safe for this specific task. Staying on the routed model preserves quota distribution. For example, a pure web research task routed to Gemini at Level 2 (read-only) can safely fall back to the CLI's default approval mode — web search doesn't write files, so the relaxed sandbox poses no real risk.
-2. **If the agent has doubts about safety at the relaxed level, switch to a different model** that supports the correct sandbox level. Walk the routing fallback chain for the task type (e.g., for read-only: Gemini → Codex read-only → host model native subagent). Quota distribution matters, but not at the expense of safety.
-3. **If all external CLIs fail, use the host model's native subagent** — it inherits the host's own permission controls.
+1. **Try a more relaxed sandbox on the same CLI** if safe for this specific task. For example, a pure web research task at Level 2 (read-only) can safely fall back to the CLI's default approval mode — web search doesn't write files.
+2. **If the relaxed level feels unsafe, move to the next provider** in the priority chain (Codex → Gemini → Claude). Quota distribution matters, but not at the expense of safety.
+3. **Claude (host, native subagent) is always the final fallback** — it inherits the host's own permission controls.
 
 ---
 
@@ -102,7 +102,7 @@ If the ideal sandbox mode fails on a CLI (e.g., read-only/plan mode requires an 
 - Status line only appears on failure (success is implicit when absent)
 - Model output goes in a fenced code block, unmodified
 - For native subagent results, skip the code fence — render the output as normal markdown since it may contain formatting
-- Route labels: `rule-0` through `rule-6`, with a short human-readable name in parentheses (e.g., "user override", "default", "MCP required", "code review", "implementation", "read-only")
+- Route labels: `rule-0` through `rule-4`, with a short human-readable name in parentheses (e.g., "user override", "MCP required", "multi-turn", "code review", "bucket fill")
 
 ---
 
@@ -140,7 +140,7 @@ Skip any step where the data is already cached and fresh. Refresh quota if the s
 **If no model hint** (auto-route):
 1. Check which external CLIs are available from the cached discovery
 2. Check quota from the cached snapshot (refresh if stale)
-3. Walk the Routing Decision Tree (Rules 1–6) — first matching rule wins
+3. Walk the Routing Decision Tree (Rules 1–4) — first matching rule wins
 4. Select the sandbox level from the Sandbox Modes table based on task type
 
 ### Step 4: Determine Agent Persona (Optional)
@@ -186,4 +186,4 @@ Present the result using the **Output Format** defined above.
 - **Transient failure** (timeout, rate limit): Retry once with the same provider. If retry succeeds, show success format. If retry fails, treat as hard failure.
 - **Hard failure** (CLI not found, crash, permission error):
   - **If user specified a model** (Rule 0): Show failure format with error details. Do not fall back — the user explicitly chose this provider.
-  - **If auto-routed** (Rules 1–6): Fall back to the next provider in the routing chain silently. If all providers fail, show failure format.
+  - **If auto-routed** (Rules 1–4): Fall back to the next provider in the routing chain silently. If all providers fail, show failure format.

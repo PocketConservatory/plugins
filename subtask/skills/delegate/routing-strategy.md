@@ -4,110 +4,97 @@ Auto-loaded at session start by the subtask plugin's SessionStart hook.
 
 ---
 
-## Concepts
+## Overview
 
-**Host model:** The agent currently executing this skill. It has native subagent spawning, tool access, and (potentially) MCP servers. Conserve host model quota by delegating to external CLIs when possible.
+This is a **Claude Code plugin**. Claude (the host) is always the primary model. External CLIs (`codex`, `gemini`) are overflow buckets — work spills into them as Claude's quota fills up.
 
-**External CLI:** Any model reached via shell command (`claude`, `codex`, `gemini`, `agent`). If routing picks the same model as the host, use native subagent spawning instead of shelling out to the CLI.
+**Priority order: Claude → Codex → Gemini.** Always. The only variable is *when* to spill.
+
+`agent` (Cursor) is **never auto-routed**. It is only used when the user explicitly requests it or requests a model that only `agent` supports (e.g., Grok).
 
 ---
 
 ## Model Registry
 
-| Model | CLI | Capabilities | Quota Pool |
-|-------|-----|-------------|------------|
-| Claude | `claude` | Full coding agent, MCP servers (if configured), multi-turn orchestration | Anthropic family (Opus/Sonnet/Haiku) |
-| Codex | `codex` | Full coding agent with file R/W, Bash, configurable sandbox | OpenAI family |
-| Codex Review | `codex` | Dedicated code review mode | OpenAI family (separate review quota) |
-| Gemini | `gemini` | Full agent with tool access, large context window | Google family |
-| Agent (Cursor) | `agent` | Multi-model CLI spanning multiple families (Anthropic, OpenAI, Google, Grok, etc.). Run `agent --list-models` to get the current list. | Cursor quota (separate pool, not measurable) |
-
-**Agent (Cursor) constraints:** No programmatic quota measurement — `agent` is **never used in automatic routing**. It is only used when: (1) the user explicitly requests it, (2) the user requests a specific model that no other CLI supports (e.g., Grok), or (3) the native CLI for a model's family is out of quota (e.g., `codex` exhausted → `agent --model gpt-5.2` as fallback). `agent` is never considered for quota balancing in Rules 1–6.
+| Model | CLI | Quota Pool |
+|-------|-----|------------|
+| Claude | host (native subagent) | Anthropic family (Opus/Sonnet/Haiku) |
+| Codex | `codex` | OpenAI family |
+| Codex Review | `codex review` | OpenAI family (separate review quota) |
+| Gemini | `gemini` | Google family |
+| Agent (Cursor) | `agent` | Cursor quota (separate, not measurable) |
 
 **Flag derivation:** All CLI flags MUST come from the cached `--help` output. Never hardcode flags. Consult the cached `--help` to determine flags for: non-interactive mode, sandbox level, prompt input method, and output format.
 
 ---
 
-## Routing Decision Tree
+## Routing Rules
 
-Walk this tree top-to-bottom. **First matching rule wins.**
+Walk top-to-bottom. **First matching rule wins.**
 
 ### Rule 0: User Override
 
-If the user specified a **CLI name** (e.g., "using gemini", "using codex", "using claude", "using agent"), use that CLI unconditionally. No further routing needed.
+If the user specified a **CLI name** (e.g., "using codex", "using gemini", "using agent"), use that CLI unconditionally.
 
-If the user specified a **specific model name** (e.g., "grok", "gpt-5.2", "opus-4.6-thinking", "gemini-3-pro"), resolve it by model family:
-1. Identify the **native CLI** for the model's family (e.g., OpenAI family → `codex`, Anthropic family → `claude`, Google family → `gemini`). Use that CLI with `--model <id>`.
-2. If the native CLI is **out of quota**, fall back to `agent --model <id>` (separate quota pool).
-3. If the model doesn't belong to any primary CLI's family (e.g., Grok), check the cached `agent --list-models` — if it appears there, route to `agent`.
-4. If no installed CLI supports the model, **report the error to the user** — do not silently fall back to another provider.
+If the user specified a **specific model name** (e.g., "grok", "gpt-5.2", "gemini-3-pro"):
+1. Identify the **native CLI** for the model's family (OpenAI → `codex`, Google → `gemini`). Use that CLI with `--model <id>`.
+2. If the model doesn't belong to `codex` or `gemini` families (e.g., Grok), check cached `agent --list-models` — if supported, route to `agent`.
+3. If no CLI supports the model, report the error to the user.
 
 ### Rule 1: MCP Required
 
-Task needs MCP servers (Linear, Notion, Sentry, Amplitude, Firebase, Figma, Slack, or any other MCP tool).
+Task needs MCP servers (Linear, Notion, Sentry, Amplitude, Figma, Slack, etc.).
 
--> **Host model** if it has the required MCP servers configured (check available tools).
--> **Fallback:** Claude CLI (most likely to have MCP configured). If neither has MCP, report to user.
+→ **Claude (host).** Only the host has MCP access. No fallback.
 
 ### Rule 2: Multi-Turn Required
 
-Task requires multi-turn conversation with the codebase (iterative exploration, back-and-forth reasoning).
+Task requires iterative conversation, back-and-forth reasoning, or interactive debugging.
 
--> **Host model (native subagent).** External CLIs are single-shot.
+→ **Claude (host, native subagent).** External CLIs are single-shot.
 
 ### Rule 3: Code Review
 
 Task is reviewing code for correctness, quality, security, or patterns.
 
--> **Prefer:** Codex Review (separate quota pool)
--> **Fallback:** Codex in read-only mode -> Gemini in read-only mode -> `agent` with an equivalent model -> host model (native subagent)
+→ **Codex Review** (separate quota pool — always prefer this regardless of pressure)
+→ Fallback: Claude (host) → Gemini in read-only mode
 
-### Rule 4: Implementation
+### Rule 4: Bucket Fill (All Other Tasks)
 
-Task is writing code, creating files, or making changes.
+Everything else — implementation, research, analysis, advisory, documentation — follows the same priority based on quota pressure:
 
--> **Prefer:** Codex or Claude — pick whichever has more remaining quota
--> **Fallback:** Gemini -> `agent` with an equivalent model -> host model (native subagent)
+| Pressure | Route to | Rationale |
+|----------|----------|-----------|
+| **Low** (>50%) | Claude (host, inline) | Speed wins. No delegation latency. |
+| **Medium** (20–50%) | Codex for multi-step tasks; Claude for simple tasks | Start spilling heavy work to preserve Claude quota |
+| **High** (<20%) | Codex for everything delegatable | Reserve Claude for MCP, multi-turn, and displaying results |
+| **Critical** (<5%) | Codex → Gemini | Exhaust Codex first, then spill to Gemini |
 
-### Rule 5: Read-Only
+**Fallback chain at any pressure:** Codex → Gemini → Claude (host, native subagent).
 
-Task is advisory, analysis, plan review, documentation review, or research. Does not modify files.
-
--> **Prefer:** Codex in read-only mode (separate quota pool)
--> **Fallback:** Gemini in read-only/plan mode -> `agent` in plan/ask mode -> host model (native subagent)
-
-### Rule 6: Default
-
-No specific routing constraint applies.
-
--> **Prefer:** Codex or Claude — pick whichever has more remaining quota
--> **Fallback:** Gemini -> `agent` -> host model (native subagent)
--> If no external CLIs are installed, use host model (native subagent)
+If a provider fails or is out of quota, move to the next in the chain. Claude as host is always the final fallback — it can't be "unavailable."
 
 ---
 
 ## Inline vs. Delegate
 
-External CLI delegation is slower than native tool calls — there's real latency cost. The goal is not to delegate everything blindly, but to **maximize the value extracted from every quota token across all providers.**
+Delegation has real latency cost. The goal is to **maximize value per quota token**, not to delegate everything blindly.
 
-**Use your judgement.** You have the quota pressure level, the task complexity, and the context value of the results. Balance these:
-
-- **When quota pressure is low**, favor speed. Run tasks inline unless they'd flood the context with throwaway output (e.g., raw search results, large file dumps). The latency cost of delegation isn't worth it when quota is abundant.
-- **When quota pressure is medium or high**, favor preservation. The host model's remaining quota is a finite resource that should be spent on tasks where inline context matters — interactive debugging, iterative design decisions, multi-turn conversations with the user. Offload everything else.
-- **Simple, fast tasks** (a single tool call, a quick file read, an MCP query) can stay inline at any pressure level. The token cost is negligible and the result is often needed in the conversation. Don't pay the delegation latency tax for something that costs 100 tokens.
-- **Multi-step research and web searches** should almost always be delegated regardless of pressure — not primarily for quota, but because the raw intermediate output pollutes context. The exception is when pressure is low AND the intermediate results are themselves valuable to the ongoing conversation.
-
-Effective quota management is a core competency. Many developers hit quota walls because their tools don't distribute load intelligently. This skill exists to solve that — make every token count across all available providers.
+- **Low pressure:** Most tasks run inline. Only delegate when output would flood context (large file dumps, raw search results).
+- **Medium pressure:** Delegate multi-step tasks and implementation. Keep simple single-call tasks inline.
+- **High/Critical pressure:** Delegate everything except MCP calls, trivial single-tool-call tasks, and displaying results to the user.
+- **Multi-step research and web searches:** Almost always delegate regardless of pressure — the intermediate output pollutes context.
 
 ---
 
 ## Quota Pressure Assessment
 
-| Pressure | Condition | Delegation stance | Inline threshold |
-|----------|-----------|-------------------|------------------|
-| **Low** | >50% remaining on both short-term (e.g., 5hr) and long-term (weekly) windows | Delegate only when it clearly saves context or crosses providers | Most tasks can run inline |
-| **Medium** | 20–50% remaining on either window | Actively prefer delegation for multi-step tasks | Only simple, fast tasks inline (1–2 tool calls, small output) |
-| **High** | <20% remaining on either window | Aggressively delegate everything possible to external CLIs | Only trivial single-call tasks inline |
-| **Critical** | <5% remaining or rate-limited | Delegate all work to external CLIs; avoid host model usage entirely | Nothing inline except displaying results |
+| Pressure | Condition | Delegation stance |
+|----------|-----------|-------------------|
+| **Low** | >50% remaining on both 5hr and 7-day windows | Inline by default, delegate for context hygiene |
+| **Medium** | 20–50% remaining on either window | Delegate multi-step work, inline simple tasks |
+| **High** | <20% remaining on either window | Delegate aggressively to Codex |
+| **Critical** | <5% remaining or rate-limited | Delegate all work; spill from Codex to Gemini |
 
-Note the **reset times** from the quota snapshot. The pressure level applies until the earliest reset — after that, re-run `cclimits` to reassess.
+Note the **reset times** from the quota snapshot. Pressure applies until the earliest reset — after that, re-run `cclimits` to reassess.

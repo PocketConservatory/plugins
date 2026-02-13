@@ -27,4 +27,4 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo ""
-cat "${SCRIPT_DIR}/skills/delegate/routing-strategy.md"
+cat "${SCRIPT_DIR}/skills/delegate/context.md"

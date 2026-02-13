@@ -39,7 +39,9 @@ Apply the **least access** that satisfies the task. Derive flags from cached `--
 | 3. Working dir | Read + scoped writes | Implementation within a worktree or temp sandbox |
 | 4. Full access | Read + write beyond working dir | Needs config outside worktree (still sandboxed) |
 
-**⛔ HARD RULE — NEVER use elevated-permission flags. No exceptions. ⛔**
+**⛔ NEVER use elevated-permission flags. This is a hard constraint, not a guideline. ⛔**
+
+**If a task cannot be completed within a sandbox, DO NOT delegate it. Fall back to Claude (native subagent) or abandon the delegation entirely. An unsandboxed external CLI invocation is never acceptable — not for any task, any provider, any reason.**
 
 | CLI | Banned flags |
 |-----|-------------|
@@ -48,9 +50,9 @@ Apply the **least access** that satisfies the task. Derive flags from cached `--
 | `gemini` | `-y` / `--yolo`, `--approval-mode yolo` |
 | `agent` | `-f` / `--force`, `--sandbox disabled` |
 
-Any flag that bypasses permissions, auto-approves all actions, or disables the sandbox is banned — including future equivalents. No exceptions for "simple" tasks, code reviews, or read-only work.
+This covers any flag — present or future — that bypasses permission prompts, auto-approves all actions, or disables the sandbox.
 
-If the ideal sandbox level fails on a CLI, try a more relaxed level on the same CLI if safe for the task. If unsafe, move to the next provider in priority. Claude (native subagent) is always the final fallback.
+If the ideal sandbox level fails on a CLI, try a more relaxed sandbox on the same CLI if safe. If no sandboxed invocation works, do not delegate — use Claude (native subagent) instead.
 
 ## Execution
 

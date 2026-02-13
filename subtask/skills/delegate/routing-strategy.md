@@ -24,7 +24,7 @@ All CLI flags MUST come from cached `--help` output. Never hardcode flags.
 
 ## Routing Rules
 
-Walk top-to-bottom. First match wins.
+Walk top-to-bottom. First match wins. **Skip any provider that isn't installed** — if the user doesn't have `codex`, treat it as unavailable everywhere and move to the next in priority.
 
 ### Rule 0: User Override
 

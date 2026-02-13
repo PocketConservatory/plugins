@@ -60,30 +60,28 @@ Task requires multi-turn conversation with the codebase (iterative exploration, 
 Task is reviewing code for correctness, quality, security, or patterns.
 
 -> **Prefer:** Codex Review (separate quota pool)
--> **Fallback:** Gemini in read-only mode -> `agent` with an equivalent model -> host model (native subagent)
+-> **Fallback:** Codex in read-only mode -> Gemini in read-only mode -> `agent` with an equivalent model -> host model (native subagent)
 
 ### Rule 4: Implementation
 
 Task is writing code, creating files, or making changes.
 
 -> **Prefer:** Codex or Claude — pick whichever has more remaining quota
--> **Quota-exhaustion fallback:** If both are out of quota, use `agent` with an equivalent model (via `--model`)
--> **Final fallback:** host model (native subagent)
--> **NOT Gemini** (not suited for code generation tasks)
+-> **Fallback:** Gemini -> `agent` with an equivalent model -> host model (native subagent)
 
 ### Rule 5: Read-Only
 
 Task is advisory, analysis, plan review, documentation review, or research. Does not modify files.
 
--> **Prefer:** Gemini in read-only/plan mode (large context, separate quota)
--> **Fallback:** Codex in read-only mode -> `agent` in plan/ask mode -> host model (native subagent)
+-> **Prefer:** Codex in read-only mode (separate quota pool)
+-> **Fallback:** Gemini in read-only/plan mode -> `agent` in plan/ask mode -> host model (native subagent)
 
 ### Rule 6: Default
 
 No specific routing constraint applies.
 
--> Use the provider with the **most remaining 7-day quota** (from `cclimits`)
--> If quota is unknown, prefer external CLIs over host model to conserve host quota
+-> **Prefer:** Codex or Claude — pick whichever has more remaining quota
+-> **Fallback:** Gemini -> `agent` -> host model (native subagent)
 -> If no external CLIs are installed, use host model (native subagent)
 
 ---

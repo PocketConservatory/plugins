@@ -51,27 +51,16 @@ claude plugin marketplace add PocketConservatory/plugins
 claude plugin install subtask@tonic --scope project
 ```
 
-Restart Claude Code, then run the one-time setup:
-
-```
-/subtask:install
-```
-
-This does two things:
-1. Adds a small section to your `CLAUDE.md` that tells Claude to use quota-aware routing
-2. Verifies which AI CLIs are installed and working
+Restart Claude Code. The routing strategy and quota hooks activate automatically.
 
 ## Usage
 
-### Automatic session context
+### Automatic quota enforcement
 
-Every time you start, resume, or clear a Claude Code session, subtask automatically injects:
+subtask uses two hooks to manage quota without you doing anything:
 
-- **Which CLIs are installed** and their paths
-- **Current quota levels** across all providers (via [cclimits](https://github.com/cruzanstx/cclimits))
-- **The routing strategy** so Claude knows how to delegate
-
-Claude is always aware of your quota situation without you doing anything.
+- **SessionStart** — primes a quota cache (via [cclimits](https://github.com/cruzanstx/cclimits)) and injects the routing strategy
+- **PreToolUse** — intercepts Task calls when Claude is running low on quota and directs it to use `/subtask:delegate` instead, listing available providers
 
 ### Delegating tasks
 
@@ -91,35 +80,17 @@ You can also force a specific provider:
 /subtask:delegate Implement retry logic with codex
 ```
 
-### Routing rules
+### Routing
 
-The router walks a decision tree — first match wins:
+**Priority: Claude → Codex → Gemini.** Claude is the primary model. External CLIs are overflow buckets when Claude is under pressure.
 
-1. **User override** — you said which provider to use
-2. **MCP required** — task needs Linear/Notion/Slack/etc. → stays on Claude
-3. **Multi-turn** — iterative exploration → stays on Claude (external CLIs are single-shot)
-4. **Code review** → Codex (separate review quota)
-5. **Implementation** → Codex or Claude, whichever has more quota
-6. **Read-only** → Gemini (large context, separate quota)
-7. **Default** → provider with the most remaining 7-day quota
-
-### Quota pressure
-
-subtask assesses pressure based on remaining quota and adjusts how aggressively it delegates:
-
-| Pressure | Condition | Behavior |
-|----------|-----------|----------|
-| Low | >50% remaining | Most tasks run inline for speed |
-| Medium | 20–50% remaining | Multi-step tasks get delegated |
-| High | <20% remaining | Everything possible gets delegated |
-| Critical | <5% remaining | All work offloaded to external CLIs |
+The PreToolUse hook computes pressure levels from remaining quota and reset times. When Claude is HIGH or CRITICAL and alternative providers are available, it blocks Task calls with a directive to delegate. Code reviews always go to Codex (separate quota pool).
 
 ## Skills
 
 | Skill | Description |
 |-------|-------------|
 | `/subtask:delegate <task>` | Route a task to the optimal AI CLI based on type and quota |
-| `/subtask:install` | One-time setup: inject config into CLAUDE.md, verify CLIs |
 
 ---
 

@@ -4,6 +4,16 @@
 
 Skip any CLI the user doesn't have installed.
 
+## Pre-work delegation check
+
+**STOP before every task.** Before spawning a Task subagent, making a WebFetch/WebSearch call, or starting any multi-step work:
+
+1. Check quota pressure from the session start context below
+2. If you're pressured or worse: use `/subtask:delegate` unless the task requires MCP access or multi-turn interaction with the user. No exceptions.
+3. If you catch yourself about to use `Task` tool with `subagent_type` of `general-purpose` or `Explore` while pressured — that's a delegation candidate. Stop and use `/subtask:delegate` instead.
+
+This is a blocking gate, not a suggestion. Using host tokens for work another provider could handle is a bug.
+
 ## When to use `/subtask:delegate`
 
 | Situation | Action |
@@ -19,7 +29,7 @@ Skip any CLI the user doesn't have installed.
 
 ## Reading quota data
 
-The session start context includes a `cclimits` snapshot. Each provider has different windows and thresholds — assess independently:
+Each provider has different windows and thresholds — assess independently:
 
 - **Has headroom:** >50% on all windows
 - **Getting tight:** any window 20–50%

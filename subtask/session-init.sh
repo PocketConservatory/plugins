@@ -25,7 +25,6 @@ else
   echo "  npx not found"
 fi
 
-# Routing strategy (auto-loaded for context)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo ""
 cat "${SCRIPT_DIR}/skills/delegate/routing-strategy.md"

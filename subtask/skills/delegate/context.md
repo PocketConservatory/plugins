@@ -4,7 +4,7 @@
 
 ## Quota enforcement
 
-A PreToolUse hook monitors quota pressure and will warn you before Task calls when Claude is running low. Follow its directives.
+A PreToolUse hook monitors quota pressure and will warn you before Task, WebSearch, and WebFetch calls when Claude is running low. Follow its directives.
 
 ## Proactive delegation
 

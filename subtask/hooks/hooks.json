@@ -13,11 +13,11 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Task",
+        "matcher": "Task|WebSearch|WebFetch",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/pre-task-check.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/pre-tool-quota-check.sh\"",
             "timeout": 15
           }
         ]

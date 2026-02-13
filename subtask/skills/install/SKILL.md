@@ -18,7 +18,7 @@ Run this once after installing the plugin to configure the project for quota-awa
 ```markdown
 ## Quota-Aware Task Delegation
 
-At the start of each session, read the `/subtask:new` skill to load the multi-model routing and quota management strategy. Assess quota pressure early and use it to guide inline vs. delegation decisions throughout the session. Use `/subtask:new` to delegate tasks to external AI CLIs when appropriate.
+At the start of each session, read the `/subtask:delegate` skill to load the multi-model routing and quota management strategy. Assess quota pressure early and use it to guide inline vs. delegation decisions throughout the session. Use `/subtask:delegate` to delegate tasks to external AI CLIs when appropriate.
 ```
 
 3. **Run CLI discovery** to verify the environment is ready:

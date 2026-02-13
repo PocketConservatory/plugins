@@ -1,5 +1,5 @@
 ---
-name: new
+name: delegate
 description: Delegate a task to the optimal AI model based on routing rules, quota, and task type
 user-invocable: true
 argument-hint: <task description>
@@ -16,19 +16,19 @@ This skill is **host-agnostic** — it works from any CLI tool (Claude Code, Cod
 ## Usage
 
 ```
-/subtask:new <task description>
+/subtask:delegate <task description>
 ```
 
 Model hints can appear anywhere in the input — at the end, beginning, or inline. All of these work:
 
-- `/subtask:new Research best practices for caching in Firebase` — auto-routes
-- `/subtask:new Review the auth changes in this PR using codex` — Codex
-- `/subtask:new Use gemini to analyze the performance impact of this migration` — Gemini
-- `/subtask:new with codex, implement retry logic in utils/retry.ts` — Codex
-- `/subtask:new Analyze this module using Codex 5.3 High` — Codex with specific variant
-- `/subtask:new Create a Linear ticket for the billing bug` — auto-routes to host model (needs MCP)
-- `/subtask:new Use agent to refactor the utils module` — Agent (Cursor)
-- `/subtask:new Analyze this with grok` — routes to `agent` (Grok is only available there)
+- `/subtask:delegate Research best practices for caching in Firebase` — auto-routes
+- `/subtask:delegate Review the auth changes in this PR using codex` — Codex
+- `/subtask:delegate Use gemini to analyze the performance impact of this migration` — Gemini
+- `/subtask:delegate with codex, implement retry logic in utils/retry.ts` — Codex
+- `/subtask:delegate Analyze this module using Codex 5.3 High` — Codex with specific variant
+- `/subtask:delegate Create a Linear ticket for the billing bug` — auto-routes to host model (needs MCP)
+- `/subtask:delegate Use agent to refactor the utils module` — Agent (Cursor)
+- `/subtask:delegate Analyze this with grok` — routes to `agent` (Grok is only available there)
 
 ---
 

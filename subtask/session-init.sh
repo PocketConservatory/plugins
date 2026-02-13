@@ -9,7 +9,7 @@ echo "[subtask] Session context:"
 # CLI discovery
 echo ""
 echo "Installed CLIs:"
-for cmd in claude codex gemini agent; do
+for cmd in codex gemini agent; do
   path=$(which "$cmd" 2>/dev/null || true)
   if [ -n "$path" ]; then
     echo "  $cmd: $path"

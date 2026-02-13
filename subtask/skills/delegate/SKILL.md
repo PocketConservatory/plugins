@@ -9,7 +9,7 @@ argument-hint: <task description>
 
 Delegate a task to the best available AI model. The routing strategy is auto-loaded at session start — it tells the agent when and where to delegate.
 
-**Providers:** Claude (host, native subagent) · `codex` (OpenAI) · `codex review` (separate quota) · `gemini` (Google) · `agent` (Cursor, manual-only)
+**External CLIs:** `codex` (OpenAI) · `codex review` (separate quota) · `gemini` (Google) · `agent` (Cursor, manual-only)
 
 All CLI flags MUST come from cached `--help` output. Never hardcode flags.
 
@@ -45,7 +45,6 @@ Apply the **least access** that satisfies the task. Derive flags from cached `--
 
 | CLI | Banned flags |
 |-----|-------------|
-| `claude` | `--dangerously-skip-permissions`, `--permission-mode bypassPermissions` |
 | `codex` | `--dangerously-bypass-approvals-and-sandbox` |
 | `gemini` | `-y` / `--yolo`, `--approval-mode yolo` |
 | `agent` | `-f` / `--force`, `--sandbox disabled` |
@@ -66,8 +65,8 @@ Extract **task description** and **model hint** (if any). Match hints case-insen
 
 If the SessionStart hook already injected CLI availability and quota data, use that. Otherwise:
 
-1. Run `which claude codex gemini agent` (no chaining)
-2. Run `<cli> --help` for every installed CLI and cache output
+1. Run `which codex gemini agent` (no chaining)
+2. Run `<cli> --help` for each installed CLI and cache output
 3. If `agent` installed, run `agent --list-models` and cache
 4. Run `npx cclimits --json` for quota snapshot across all providers
 
